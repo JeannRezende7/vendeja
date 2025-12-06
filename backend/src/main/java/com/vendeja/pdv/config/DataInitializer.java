@@ -14,6 +14,7 @@ public class DataInitializer implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final FormaPagamentoRepository formaPagamentoRepository;
     private final CategoriaRepository categoriaRepository;
+    private final ConfiguracaoRepository configuracaoRepository;
     
     @Override
     public void run(String... args) {
@@ -56,6 +57,24 @@ public class DataInitializer implements CommandLineRunner {
             Categoria geral = new Categoria();
             geral.setDescricao("Geral");
             categoriaRepository.save(geral);
+        }
+        
+        // Criar configuração padrão
+        if (configuracaoRepository.count() == 0) {
+            Configuracao config = new Configuracao();
+            config.setNomeFantasia("MINHA EMPRESA");
+            config.setRazaoSocial("MINHA EMPRESA LTDA");
+            config.setCnpj("00.000.000/0000-00");
+            config.setInscricaoEstadual("00.000.000");
+            config.setEndereco("Rua Principal, 123");
+            config.setBairro("Centro");
+            config.setCidade("Cidade");
+            config.setUf("RJ");
+            config.setCep("00000-000");
+            config.setTelefone("(00) 0000-0000");
+            config.setEmail("contato@empresa.com.br");
+            config.setMensagemCupom("* OBRIGADO E VOLTE SEMPRE *");
+            configuracaoRepository.save(config);
         }
     }
 }

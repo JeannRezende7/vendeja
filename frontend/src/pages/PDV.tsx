@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { produtoService, clienteService, vendaService, cadastrosService } from '../services/api';
 import { Produto, Cliente, VendaItem, FormaPagamento, Usuario } from '../types';
 import ModalPagamento from '../components/ModalPagamento';
+import { useNotification } from '../contexts/NotificationContext';
+import axios from 'axios';
+import CupomNaoFiscal from '../components/CupomNaoFiscal';
 
 interface PagamentoItem {
   formaPagamento: FormaPagamento;
@@ -13,6 +16,7 @@ interface PagamentoItem {
 
 export default function PDV() {
   const navigate = useNavigate();
+  const { showSuccess, showError, showWarning } = useNotification();
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [codigoProduto, setCodigoProduto] = useState('');
   const [codigoCliente, setCodigoCliente] = useState('');
@@ -21,6 +25,10 @@ export default function PDV() {
   const [itemSelecionado, setItemSelecionado] = useState<number>(-1);
   const [formasPagamento, setFormasPagamento] = useState<FormaPagamento[]>([]);
   const [mostrarModalPagamento, setMostrarModalPagamento] = useState(false);
+  
+  const [empresa, setEmpresa] = useState<any>(null);
+  const [mostrarCupom, setMostrarCupom] = useState(false);
+  const [vendaFinalizada, setVendaFinalizada] = useState<any>(null);
   
   const [descontoGlobalPerc, setDescontoGlobalPerc] = useState('0');
   const [descontoGlobalValor, setDescontoGlobalValor] = useState('0');
@@ -44,6 +52,18 @@ export default function PDV() {
   }, [navigate]);
 
   useEffect(() => {
+    axios.get('http://localhost:8080/api/configuracao')
+      .then(res => {
+        setEmpresa(res.data);
+        // Carregar cliente padrão se configurado
+        if (res.data.clientePadraoId) {
+          carregarClientePadrao(res.data.clientePadraoId);
+        }
+      })
+      .catch(err => console.error('Erro ao carregar configuração:', err));
+  }, []);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Delete' && itemSelecionado >= 0) {
         removerItem(itemSelecionado);
@@ -62,7 +82,7 @@ export default function PDV() {
       setCodigoProduto('');
       inputProdutoRef.current?.focus();
     } catch (error) {
-      alert('Produto não encontrado');
+      showError('Produto não encontrado');
       setCodigoProduto('');
     }
   };
@@ -77,8 +97,18 @@ export default function PDV() {
       const res = await clienteService.buscarPorCodigo(codigo);
       setCliente(res.data);
     } catch (error) {
-      alert('Cliente não encontrado');
+      showError('Cliente não encontrado');
       setCodigoCliente('');
+    }
+  };
+
+  const carregarClientePadrao = async (clienteId: number) => {
+    try {
+      const res = await axios.get(`http://localhost:8080/api/clientes/${clienteId}`);
+      setCliente(res.data);
+      setCodigoCliente(res.data.codigo || '');
+    } catch (error) {
+      console.error('Erro ao carregar cliente padrão:', error);
     }
   };
 
@@ -200,7 +230,7 @@ export default function PDV() {
 
   const abrirModalPagamento = () => {
     if (itens.length === 0) {
-      alert('Adicione itens à venda');
+      showWarning('Adicione itens à venda');
       return;
     }
     setMostrarModalPagamento(true);
@@ -242,11 +272,25 @@ export default function PDV() {
       setMostrarModalPagamento(false);
       
       if (troco > 0) {
-        alert(`Venda ${res.data.numeroDocumento} finalizada!\n\nTroco: R$ ${troco.toFixed(2)}`);
+        showSuccess(`Venda ${res.data.numeroDocumento} finalizada! Troco: R$ ${troco.toFixed(2)}`);
       } else {
-        alert(`Venda ${res.data.numeroDocumento} finalizada com sucesso!`);
+        showSuccess(`Venda ${res.data.numeroDocumento} finalizada com sucesso!`);
       }
       
+      // Preparar dados completos para o cupom
+      const vendaCompleta = {
+        ...res.data,
+        itens: itens,
+        cliente: cliente,
+        usuario: usuario,
+        pagamentos: pagamentos.map(p => ({
+          formaPagamento: p.formaPagamento,
+          valor: p.valorPago,
+        })),
+      };
+      
+      setVendaFinalizada(vendaCompleta);
+      setMostrarCupom(true);
       limparVenda();
     } catch (error: any) {
       console.error('Erro:', error);
@@ -262,14 +306,21 @@ export default function PDV() {
       } else if (error.message) {
         mensagem = error.message;
       }
-      alert('Erro ao finalizar venda: ' + mensagem);
+      showError('Erro ao finalizar venda: ' + mensagem);
     }
   };
 
   const limparVenda = () => {
     setItens([]);
-    setCliente(null);
-    setCodigoCliente('');
+    
+    // Se tem cliente padrão configurado, recarregar ele
+    if (empresa?.clientePadraoId) {
+      carregarClientePadrao(empresa.clientePadraoId);
+    } else {
+      setCliente(null);
+      setCodigoCliente('');
+    }
+    
     setCodigoProduto('');
     setDescontoGlobalPerc('0');
     setDescontoGlobalValor('0');
@@ -283,7 +334,18 @@ export default function PDV() {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       <div className="bg-primary text-white p-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">VendeJá PDV</h1>
+        <div className="flex items-center gap-4">
+          {empresa?.logoPath && (
+            <img 
+              src={`http://localhost:8080/uploads/logos/${empresa.logoPath}`} 
+              alt="Logo" 
+              className="h-12 w-auto"
+            />
+          )}
+          <h1 className="text-2xl font-bold">
+            {empresa?.nomeFantasia || 'VendeJá PDV'}
+          </h1>
+        </div>
         <div className="flex gap-4 items-center">
           <span>Operador: {usuario?.nome}</span>
           <button
@@ -297,6 +359,12 @@ export default function PDV() {
             className="bg-white text-primary px-4 py-2 rounded hover:bg-gray-100"
           >
             Cadastros
+          </button>
+          <button
+            onClick={() => navigate('/configuracao')}
+            className="bg-white text-primary px-4 py-2 rounded hover:bg-gray-100"
+          >
+            ⚙️ Configuração
           </button>
           <button
             onClick={() => {
@@ -545,6 +613,14 @@ export default function PDV() {
           formasPagamento={formasPagamento}
           onConfirmar={finalizarVenda}
           onCancelar={() => setMostrarModalPagamento(false)}
+        />
+      )}
+
+      {mostrarCupom && vendaFinalizada && empresa && (
+        <CupomNaoFiscal
+          venda={vendaFinalizada}
+          empresa={empresa}
+          onClose={() => setMostrarCupom(false)}
         />
       )}
     </div>

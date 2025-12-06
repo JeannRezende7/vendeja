@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FormaPagamento } from '../types';
+import { useNotification } from '../contexts/NotificationContext';
 
 interface PagamentoItem {
   formaPagamento: FormaPagamento;
@@ -16,6 +17,7 @@ interface ModalPagamentoProps {
 }
 
 export default function ModalPagamento({ valorTotal, formasPagamento, onConfirmar, onCancelar }: ModalPagamentoProps) {
+  const { showWarning, showError } = useNotification();
   const [pagamentos, setPagamentos] = useState<PagamentoItem[]>([]);
   const [formaSelecionada, setFormaSelecionada] = useState<number>(formasPagamento[0]?.id || 0);
   const [valorPagamento, setValorPagamento] = useState('');
@@ -35,7 +37,7 @@ export default function ModalPagamento({ valorTotal, formasPagamento, onConfirma
   const adicionarPagamento = () => {
     const valor = parseFloat(valorPagamento);
     if (!valor || valor <= 0) {
-      alert('Informe um valor válido');
+      showWarning('Informe um valor válido');
       return;
     }
 
@@ -45,7 +47,7 @@ export default function ModalPagamento({ valorTotal, formasPagamento, onConfirma
 
     // Validação: Cartão não pode ser maior que o saldo
     if (['03', '04'].includes(forma.tipoPagamento) && valor > saldo) {
-      alert('Valor do cartão não pode ser maior que o saldo da venda');
+      showError('Valor do cartão não pode ser maior que o saldo da venda');
       return;
     }
 
@@ -76,7 +78,7 @@ export default function ModalPagamento({ valorTotal, formasPagamento, onConfirma
   const confirmar = () => {
     const saldo = calcularSaldo();
     if (saldo > 0.01) {
-      alert(`Ainda falta pagar R$ ${saldo.toFixed(2)}`);
+      showWarning(`Ainda falta pagar R$ ${saldo.toFixed(2)}`);
       return;
     }
 

@@ -1,0 +1,164 @@
+# MODIFICAÇÕES NO PDV.tsx
+
+## 1. IMPORTS (no topo do arquivo, após os imports existentes):
+```typescript
+import axios from 'axios';
+import CupomNaoFiscal from '../components/CupomNaoFiscal';
+```
+
+## 2. ESTADOS (adicionar após os estados existentes, linha ~25):
+```typescript
+const [empresa, setEmpresa] = useState<any>(null);
+const [mostrarCupom, setMostrarCupom] = useState(false);
+const [vendaFinalizada, setVendaFinalizada] = useState<any>(null);
+```
+
+## 3. useEffect para CARREGAR EMPRESA (adicionar após o useEffect do navigate, linha ~45):
+```typescript
+useEffect(() => {
+  axios.get('http://localhost:8080/api/configuracao')
+    .then(res => setEmpresa(res.data))
+    .catch(err => console.error('Erro ao carregar configuração:', err));
+}, []);
+```
+
+## 4. MODIFICAR finalizarVenda (substituir a função completa, linha ~220):
+```typescript
+const finalizarVenda = async (pagamentos: PagamentoItem[], valorPago: number, troco: number) => {
+  const vendaDTO = {
+    usuarioId: usuario!.id,
+    clienteId: cliente?.id || null,
+    subtotal: calcularSubtotal(),
+    descontoPercentual: parseFloat(descontoGlobalPerc) || 0,
+    descontoValor: parseFloat(descontoGlobalValor) || 0,
+    acrescimoPercentual: parseFloat(acrescimoGlobalPerc) || 0,
+    acrescimoValor: parseFloat(acrescimoGlobalValor) || 0,
+    frete: parseFloat(frete) || 0,
+    total: calcularTotal(),
+    valorPago: valorPago,
+    troco: troco,
+    observacoes: null,
+    itens: itens.map(item => ({
+      produtoId: item.produto.id,
+      quantidade: item.quantidade,
+      precoUnitario: item.precoUnitario,
+      descontoPercentual: item.descontoPercentual || 0,
+      descontoValor: item.descontoValor || 0,
+      acrescimoPercentual: item.acrescimoPercentual || 0,
+      acrescimoValor: item.acrescimoValor || 0,
+      total: item.total,
+    })),
+    pagamentos: pagamentos.map(p => ({
+      formaPagamentoId: p.formaPagamento.id,
+      valor: p.valorPago,
+      troco: p.troco,
+    })),
+  };
+
+  try {
+    const res = await vendaService.criar(vendaDTO);
+    setMostrarModalPagamento(false);
+    
+    if (troco > 0) {
+      showSuccess(`Venda ${res.data.numeroDocumento} finalizada! Troco: R$ ${troco.toFixed(2)}`);
+    } else {
+      showSuccess(`Venda ${res.data.numeroDocumento} finalizada com sucesso!`);
+    }
+    
+    // Preparar dados completos para o cupom
+    const vendaCompleta = {
+      ...res.data,
+      itens: itens,
+      cliente: cliente,
+      usuario: usuario,
+      pagamentos: pagamentos.map(p => ({
+        formaPagamento: p.formaPagamento,
+        valor: p.valorPago,
+      })),
+    };
+    
+    setVendaFinalizada(vendaCompleta);
+    setMostrarCupom(true);
+    limparVenda();
+  } catch (error: any) {
+    console.error('Erro:', error);
+    let mensagem = 'Erro desconhecido';
+    if (error.response?.data) {
+      if (typeof error.response.data === 'string') {
+        mensagem = error.response.data;
+      } else if (error.response.data.erro) {
+        mensagem = error.response.data.erro;
+      } else {
+        mensagem = JSON.stringify(error.response.data);
+      }
+    } else if (error.message) {
+      mensagem = error.message;
+    }
+    showError('Erro ao finalizar venda: ' + mensagem);
+  }
+};
+```
+
+## 5. CABEÇALHO COM LOGO (substituir o div do header, linha ~290):
+```typescript
+<div className="bg-primary text-white p-4 flex justify-between items-center">
+  <div className="flex items-center gap-4">
+    {empresa?.logoPath && (
+      <img 
+        src={`http://localhost:8080/uploads/logos/${empresa.logoPath}`} 
+        alt="Logo" 
+        className="h-12 w-auto"
+      />
+    )}
+    <h1 className="text-2xl font-bold">
+      {empresa?.nomeFantasia || 'VendeJá PDV'}
+    </h1>
+  </div>
+  <div className="flex gap-4 items-center">
+    <span>Operador: {usuario?.nome}</span>
+    <button
+      onClick={() => navigate('/vendas')}
+      className="bg-white text-primary px-4 py-2 rounded hover:bg-gray-100"
+    >
+      Vendas
+    </button>
+    <button
+      onClick={() => navigate('/cadastros')}
+      className="bg-white text-primary px-4 py-2 rounded hover:bg-gray-100"
+    >
+      Cadastros
+    </button>
+    <button
+      onClick={() => navigate('/configuracao')}
+      className="bg-white text-primary px-4 py-2 rounded hover:bg-gray-100"
+    >
+      ⚙️ Configuração
+    </button>
+    <button
+      onClick={() => {
+        localStorage.removeItem('usuario');
+        navigate('/');
+      }}
+      className="bg-red-500 px-4 py-2 rounded hover:bg-red-600"
+    >
+      Sair
+    </button>
+  </div>
+</div>
+```
+
+## 6. ADICIONAR CUPOM (no final do return, ANTES do último </div>, linha ~550):
+```typescript
+      {mostrarCupom && vendaFinalizada && empresa && (
+        <CupomNaoFiscal
+          venda={vendaFinalizada}
+          empresa={empresa}
+          onClose={() => setMostrarCupom(false)}
+        />
+      )}
+    </div>  {/* Fechamento do div principal */}
+  );
+}
+```
+
+PRONTO! Essas são todas as modificações necessárias no PDV.tsx

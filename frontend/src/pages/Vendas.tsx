@@ -2,15 +2,20 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vendaService } from '../services/api';
 import { Venda } from '../types';
+import axios from 'axios';
+import CupomNaoFiscal from '../components/CupomNaoFiscal';
 
 export default function Vendas() {
   const navigate = useNavigate();
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [vendaSelecionada, setVendaSelecionada] = useState<Venda | null>(null);
   const [filtro, setFiltro] = useState('');
+  const [empresa, setEmpresa] = useState<any>(null);
+  const [mostrarCupom, setMostrarCupom] = useState(false);
 
   useEffect(() => {
     carregarVendas();
+    carregarEmpresa();
   }, []);
 
   const carregarVendas = async () => {
@@ -19,6 +24,15 @@ export default function Vendas() {
       setVendas(res.data.sort((a, b) => (b.id || 0) - (a.id || 0)));
     } catch (error) {
       console.error('Erro ao carregar vendas:', error);
+    }
+  };
+
+  const carregarEmpresa = async () => {
+    try {
+      const res = await axios.get('http://localhost:8080/api/configuracao');
+      setEmpresa(res.data);
+    } catch (error) {
+      console.error('Erro ao carregar configuração:', error);
     }
   };
 
@@ -34,6 +48,12 @@ export default function Vendas() {
   const formatarData = (dataStr: string) => {
     const data = new Date(dataStr);
     return data.toLocaleString('pt-BR');
+  };
+
+  const reimprimir = () => {
+    if (vendaSelecionada) {
+      setMostrarCupom(true);
+    }
   };
 
   return (
@@ -112,9 +132,17 @@ export default function Vendas() {
         <div className="flex-1 bg-white rounded shadow overflow-y-auto">
           {vendaSelecionada ? (
             <div className="p-6">
-              <h2 className="text-2xl font-bold mb-4 text-primary">
-                Venda #{vendaSelecionada.numeroDocumento}
-              </h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-primary">
+                  Venda #{vendaSelecionada.numeroDocumento}
+                </h2>
+                <button
+                  onClick={reimprimir}
+                  className="bg-primary text-white px-6 py-2 rounded hover:bg-green-600 font-bold flex items-center gap-2"
+                >
+                  🖨️ Reimprimir Cupom
+                </button>
+              </div>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
@@ -129,11 +157,38 @@ export default function Vendas() {
                   <label className="text-sm font-bold text-gray-600">Cliente:</label>
                   <p>{vendaSelecionada.cliente?.nome || 'Consumidor'}</p>
                 </div>
-                <div>
-                  <label className="text-sm font-bold text-gray-600">Forma Pagamento:</label>
-                  <p>{vendaSelecionada.formaPagamento?.descricao || '-'}</p>
-                </div>
               </div>
+
+              {/* Formas de Pagamento */}
+              {vendaSelecionada.pagamentos && vendaSelecionada.pagamentos.length > 0 && (
+                <div className="mb-6 p-4 bg-gray-50 rounded">
+                  <h3 className="font-bold text-sm text-gray-600 mb-2">Formas de Pagamento:</h3>
+                  <table className="w-full">
+                    <thead className="bg-gray-200">
+                      <tr>
+                        <th className="p-2 text-left">Forma</th>
+                        <th className="p-2 text-right">Valor</th>
+                        <th className="p-2 text-right">Troco</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vendaSelecionada.pagamentos.map((pag, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{pag.formaPagamento?.descricao || '-'}</td>
+                          <td className="p-2 text-right font-bold">R$ {pag.valor?.toFixed(2) || '0.00'}</td>
+                          <td className="p-2 text-right text-blue-600">
+                            {pag.troco && pag.troco > 0 ? `R$ ${pag.troco.toFixed(2)}` : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="flex justify-between mt-2 pt-2 border-t font-bold">
+                    <span>Total Pago:</span>
+                    <span>R$ {(vendaSelecionada.valorPago || vendaSelecionada.total).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
 
               <div className="border-t pt-4">
                 <h3 className="font-bold text-lg mb-3">Itens da Venda</h3>
@@ -167,7 +222,7 @@ export default function Vendas() {
               <div className="border-t mt-6 pt-4 space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span className="font-bold">R$ {vendaSelecionada.subtotal.toFixed(2)}</span>
+                  <span className="font-bold">R$ {vendaSelecionada.subtotal?.toFixed(2) || '0.00'}</span>
                 </div>
                 {vendaSelecionada.descontoPercentual && vendaSelecionada.descontoPercentual > 0 && (
                   <div className="flex justify-between text-red-600">
@@ -203,6 +258,12 @@ export default function Vendas() {
                   <span>TOTAL:</span>
                   <span>R$ {vendaSelecionada.total.toFixed(2)}</span>
                 </div>
+                {vendaSelecionada.troco && vendaSelecionada.troco > 0 && (
+                  <div className="flex justify-between text-lg font-bold text-blue-600">
+                    <span>Troco:</span>
+                    <span>R$ {vendaSelecionada.troco.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
 
               {vendaSelecionada.observacoes && (
@@ -219,6 +280,14 @@ export default function Vendas() {
           )}
         </div>
       </div>
+
+      {mostrarCupom && vendaSelecionada && empresa && (
+        <CupomNaoFiscal
+          venda={vendaSelecionada}
+          empresa={empresa}
+          onClose={() => setMostrarCupom(false)}
+        />
+      )}
     </div>
   );
 }

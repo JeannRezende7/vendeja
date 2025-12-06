@@ -73,6 +73,13 @@ export interface VendaItem {
   total: number;
 }
 
+export interface VendaPagamento {
+  id?: number;
+  formaPagamento?: FormaPagamento;
+  valor: number;
+  troco: number;
+}
+
 export interface Venda {
   id?: number;
   numeroDocumento?: number;
@@ -86,7 +93,10 @@ export interface Venda {
   acrescimoValor?: number;
   frete?: number;
   total: number;
-  formaPagamento?: FormaPagamento;
+  valorPago?: number;
+  troco?: number;
+  formaPagamento?: FormaPagamento; // Mantido por compatibilidade
+  pagamentos?: VendaPagamento[];
   observacoes?: string;
   cancelada: boolean;
   itens: VendaItem[];

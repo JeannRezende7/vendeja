@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { produtoService, clienteService, cadastrosService } from '../services/api';
-import { Produto, Cliente, Categoria, Usuario, FormaPagamento } from '../types';
+import { Produto, Cliente, Categoria, Usuario, FormaPagamento, ProdutoCodigo } from '../types';
+import { useNotification } from '../contexts/NotificationContext';
 
 export default function Cadastros() {
+  const { showSuccess, showError, showWarning } = useNotification();
   const navigate = useNavigate();
   const [aba, setAba] = useState<'produtos' | 'clientes' | 'usuarios' | 'categorias' | 'formasPagamento'>('produtos');
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -16,13 +18,17 @@ export default function Cadastros() {
     codigo: '',
     descricao: '',
     unidade: 'UN',
-    precoVenda: 0,
-    precoCusto: 0,
-    estoque: 0,
-    estoqueMinimo: 0,
+    precoVenda: undefined,
+    precoCusto: undefined,
+    estoque: undefined,
+    estoqueMinimo: undefined,
     controlarEstoque: true,
     ativo: true,
+    codigosAlternativos: [],
   });
+
+  const [novoCodigo, setNovoCodigo] = useState('');
+  const [novoCodigoDesc, setNovoCodigoDesc] = useState('');
   
   const [clienteForm, setClienteForm] = useState<Partial<Cliente>>({
     nome: '',
@@ -80,39 +86,85 @@ export default function Cadastros() {
     }
   };
 
+  const adicionarCodigo = () => {
+    if (!novoCodigo.trim()) {
+      showWarning('Digite um código');
+      return;
+    }
+
+    const codigos = produtoForm.codigosAlternativos || [];
+    codigos.push({
+      codigo: novoCodigo,
+      descricao: novoCodigoDesc || undefined,
+    });
+
+    setProdutoForm({ ...produtoForm, codigosAlternativos: codigos });
+    setNovoCodigo('');
+    setNovoCodigoDesc('');
+  };
+
+  const removerCodigo = (index: number) => {
+    const codigos = [...(produtoForm.codigosAlternativos || [])];
+    codigos.splice(index, 1);
+    setProdutoForm({ ...produtoForm, codigosAlternativos: codigos });
+  };
+
   const salvarProduto = async () => {
     if (!produtoForm.codigo || !produtoForm.descricao) {
-      alert('Preencha código e descrição');
+      showWarning('Preencha código e descrição');
       return;
     }
     
     try {
+      // Preparar dados para envio
+      const produtoDTO = {
+        ...produtoForm,
+        precoVenda: produtoForm.precoVenda || 0,
+        precoCusto: produtoForm.precoCusto || 0,
+        estoque: produtoForm.estoque || 0,
+        estoqueMinimo: produtoForm.estoqueMinimo || 0,
+        categoria: produtoForm.categoria?.id ? { id: produtoForm.categoria.id } : null,
+      };
+
       if (produtoForm.id) {
-        await produtoService.atualizar(produtoForm.id, produtoForm as Produto);
+        await produtoService.atualizar(produtoForm.id, produtoDTO as Produto);
       } else {
-        await produtoService.criar(produtoForm as Produto);
+        await produtoService.criar(produtoDTO as Produto);
       }
-      alert('Produto salvo!');
-      setProdutoForm({
-        codigo: '',
-        descricao: '',
-        unidade: 'UN',
-        precoVenda: 0,
-        precoCusto: 0,
-        estoque: 0,
-        estoqueMinimo: 0,
-        controlarEstoque: true,
-        ativo: true,
-      });
+      showSuccess('Produto salvo com sucesso!');
+      limparProdutoForm();
       carregarDados();
     } catch (error) {
-      alert('Erro ao salvar produto');
+      showError('Erro ao salvar produto');
     }
+  };
+
+  const limparProdutoForm = () => {
+    setProdutoForm({
+      codigo: '',
+      descricao: '',
+      unidade: 'UN',
+      precoVenda: undefined,
+      precoCusto: undefined,
+      estoque: undefined,
+      estoqueMinimo: undefined,
+      controlarEstoque: true,
+      ativo: true,
+      codigosAlternativos: [],
+      categoria: undefined,
+    });
+  };
+
+  const editarProduto = (produto: Produto) => {
+    setProdutoForm({
+      ...produto,
+      codigosAlternativos: produto.codigosAlternativos || [],
+    });
   };
 
   const salvarCliente = async () => {
     if (!clienteForm.nome) {
-      alert('Preencha o nome');
+      showWarning('Preencha o nome');
       return;
     }
     
@@ -122,17 +174,17 @@ export default function Cadastros() {
       } else {
         await clienteService.criar(clienteForm as Cliente);
       }
-      alert('Cliente salvo!');
+      showSuccess('Cliente salvo com sucesso!');
       setClienteForm({ nome: '', ativo: true });
       carregarDados();
     } catch (error) {
-      alert('Erro ao salvar cliente');
+      showError('Erro ao salvar cliente');
     }
   };
   
   const salvarUsuario = async () => {
     if (!usuarioForm.login || !usuarioForm.senha || !usuarioForm.nome) {
-      alert('Preencha login, senha e nome');
+      showWarning('Preencha login, senha e nome');
       return;
     }
     
@@ -142,45 +194,64 @@ export default function Cadastros() {
       } else {
         await cadastrosService.criarUsuario(usuarioForm as Usuario);
       }
-      alert('Usuário salvo!');
+      showSuccess('Usuário salvo com sucesso!');
       setUsuarioForm({ login: '', senha: '', nome: '', admin: false, ativo: true });
       carregarDados();
     } catch (error) {
-      alert('Erro ao salvar usuário');
+      showError('Erro ao salvar usuário');
     }
   };
   
   const salvarCategoria = async () => {
     if (!categoriaForm.descricao) {
-      alert('Preencha a descrição');
+      showWarning('Preencha a descrição');
       return;
     }
     
     try {
       await cadastrosService.criarCategoria(categoriaForm as Categoria);
-      alert('Categoria salva!');
+      showSuccess('Categoria salva com sucesso!');
       setCategoriaForm({ descricao: '', ativo: true });
       carregarDados();
     } catch (error) {
-      alert('Erro ao salvar categoria');
+      showError('Erro ao salvar categoria');
     }
   };
   
   const salvarFormaPagamento = async () => {
     if (!formaPagamentoForm.descricao) {
-      alert('Preencha a descrição');
+      showWarning('Preencha a descrição');
       return;
     }
     
     try {
       await cadastrosService.criarFormaPagamento(formaPagamentoForm as FormaPagamento);
-      alert('Forma de pagamento salva!');
-      setFormaPagamentoForm({ descricao: '', permiteParcelamento: false, ativo: true });
+      showSuccess('Forma de pagamento salva com sucesso!');
+      setFormaPagamentoForm({ descricao: '', tipoPagamento: '99', permiteParcelamento: false, ativo: true });
       carregarDados();
     } catch (error) {
-      alert('Erro ao salvar forma de pagamento');
+      showError('Erro ao salvar forma de pagamento');
     }
   };
+
+  const tiposPagamento = [
+    { codigo: '01', nome: 'Dinheiro' },
+    { codigo: '02', nome: 'Cheque' },
+    { codigo: '03', nome: 'Cartão de Crédito' },
+    { codigo: '04', nome: 'Cartão de Débito' },
+    { codigo: '05', nome: 'Crédito Loja' },
+    { codigo: '10', nome: 'Vale Alimentação' },
+    { codigo: '11', nome: 'Vale Refeição' },
+    { codigo: '12', nome: 'Vale Presente' },
+    { codigo: '13', nome: 'Vale Combustível' },
+    { codigo: '15', nome: 'Boleto Bancário' },
+    { codigo: '16', nome: 'Depósito Bancário' },
+    { codigo: '17', nome: 'PIX' },
+    { codigo: '18', nome: 'Transferência Bancária' },
+    { codigo: '19', nome: 'Programa de Fidelidade' },
+    { codigo: '90', nome: 'Sem pagamento' },
+    { codigo: '99', nome: 'Outros' },
+  ];
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
@@ -262,6 +333,27 @@ export default function Cadastros() {
                       className="w-full px-3 py-2 border rounded"
                     />
                   </div>
+                  
+                  <div>
+                    <label className="block text-sm font-bold mb-1">Categoria</label>
+                    <select
+                      value={produtoForm.categoria?.id || ''}
+                      onChange={(e) => {
+                        const catId = Number(e.target.value);
+                        const cat = categorias.find(c => c.id === catId);
+                        setProdutoForm({...produtoForm, categoria: cat});
+                      }}
+                      className="w-full px-3 py-2 border rounded"
+                    >
+                      <option value="">Selecione...</option>
+                      {categorias.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.descricao}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-bold mb-1">Unidade</label>
                     <input
@@ -275,40 +367,44 @@ export default function Cadastros() {
                     <label className="block text-sm font-bold mb-1">Preço Venda</label>
                     <input
                       type="number"
-                      value={produtoForm.precoVenda}
-                      onChange={(e) => setProdutoForm({...produtoForm, precoVenda: Number(e.target.value)})}
+                      value={produtoForm.precoVenda ?? ''}
+                      onChange={(e) => setProdutoForm({...produtoForm, precoVenda: e.target.value ? Number(e.target.value) : undefined})}
                       className="w-full px-3 py-2 border rounded"
                       step="0.01"
+                      placeholder="0,00"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-bold mb-1">Preço Custo</label>
                     <input
                       type="number"
-                      value={produtoForm.precoCusto}
-                      onChange={(e) => setProdutoForm({...produtoForm, precoCusto: Number(e.target.value)})}
+                      value={produtoForm.precoCusto ?? ''}
+                      onChange={(e) => setProdutoForm({...produtoForm, precoCusto: e.target.value ? Number(e.target.value) : undefined})}
                       className="w-full px-3 py-2 border rounded"
                       step="0.01"
+                      placeholder="0,00"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-bold mb-1">Estoque</label>
                     <input
                       type="number"
-                      value={produtoForm.estoque}
-                      onChange={(e) => setProdutoForm({...produtoForm, estoque: Number(e.target.value)})}
+                      value={produtoForm.estoque ?? ''}
+                      onChange={(e) => setProdutoForm({...produtoForm, estoque: e.target.value ? Number(e.target.value) : undefined})}
                       className="w-full px-3 py-2 border rounded"
                       step="0.001"
+                      placeholder="0,000"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-bold mb-1">Estoque Mínimo</label>
                     <input
                       type="number"
-                      value={produtoForm.estoqueMinimo}
-                      onChange={(e) => setProdutoForm({...produtoForm, estoqueMinimo: Number(e.target.value)})}
+                      value={produtoForm.estoqueMinimo ?? ''}
+                      onChange={(e) => setProdutoForm({...produtoForm, estoqueMinimo: e.target.value ? Number(e.target.value) : undefined})}
                       className="w-full px-3 py-2 border rounded"
                       step="0.001"
+                      placeholder="0,000"
                     />
                   </div>
                   <div className="flex items-end">
@@ -323,29 +419,82 @@ export default function Cadastros() {
                     </label>
                   </div>
                 </div>
+
+                {/* Códigos Alternativos/EAN */}
+                <div className="mb-4 p-4 bg-gray-50 rounded">
+                  <h4 className="font-bold mb-2">Códigos Alternativos / EAN</h4>
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    <div>
+                      <input
+                        type="text"
+                        value={novoCodigo}
+                        onChange={(e) => setNovoCodigo(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && adicionarCodigo()}
+                        placeholder="Código/EAN"
+                        className="w-full px-3 py-2 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={novoCodigoDesc}
+                        onChange={(e) => setNovoCodigoDesc(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && adicionarCodigo()}
+                        placeholder="Descrição (opcional)"
+                        className="w-full px-3 py-2 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <button
+                        onClick={adicionarCodigo}
+                        className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                      >
+                        + Adicionar
+                      </button>
+                    </div>
+                  </div>
+
+                  {produtoForm.codigosAlternativos && produtoForm.codigosAlternativos.length > 0 && (
+                    <table className="w-full border rounded">
+                      <thead className="bg-gray-200">
+                        <tr>
+                          <th className="p-2 text-left">Código</th>
+                          <th className="p-2 text-left">Descrição</th>
+                          <th className="p-2 text-center w-24">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {produtoForm.codigosAlternativos.map((cod, idx) => (
+                          <tr key={idx} className="border-t">
+                            <td className="p-2">{cod.codigo}</td>
+                            <td className="p-2">{cod.descricao || '-'}</td>
+                            <td className="p-2 text-center">
+                              <button
+                                onClick={() => removerCodigo(idx)}
+                                className="text-red-600 hover:text-red-800 font-bold"
+                              >
+                                ✕
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
                 
                 <div className="flex gap-2">
                   <button
                     onClick={salvarProduto}
                     className="bg-primary text-white px-6 py-2 rounded hover:bg-green-600 font-bold"
                   >
-                    Salvar
+                    {produtoForm.id ? 'Atualizar' : 'Salvar'}
                   </button>
                   <button
-                    onClick={() => setProdutoForm({
-                      codigo: '',
-                      descricao: '',
-                      unidade: 'UN',
-                      precoVenda: 0,
-                      precoCusto: 0,
-                      estoque: 0,
-                      estoqueMinimo: 0,
-                      controlarEstoque: true,
-                      ativo: true,
-                    })}
+                    onClick={limparProdutoForm}
                     className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600"
                   >
-                    Limpar
+                    {produtoForm.id ? 'Cancelar' : 'Limpar'}
                   </button>
                 </div>
 
@@ -353,12 +502,14 @@ export default function Cadastros() {
                   <h4 className="font-bold mb-2">Produtos Cadastrados</h4>
                   <div className="border rounded max-h-96 overflow-y-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-200">
+                      <thead className="bg-gray-200 sticky top-0">
                         <tr>
                           <th className="p-2 text-left">Código</th>
                           <th className="p-2 text-left">Descrição</th>
+                          <th className="p-2 text-left">Categoria</th>
                           <th className="p-2 text-right">Preço</th>
                           <th className="p-2 text-right">Estoque</th>
+                          <th className="p-2 text-center">Ações</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -366,8 +517,17 @@ export default function Cadastros() {
                           <tr key={p.id} className="border-t hover:bg-gray-50">
                             <td className="p-2">{p.codigo}</td>
                             <td className="p-2">{p.descricao}</td>
+                            <td className="p-2">{p.categoria?.descricao || '-'}</td>
                             <td className="p-2 text-right">R$ {p.precoVenda.toFixed(2)}</td>
                             <td className="p-2 text-right">{p.estoque.toFixed(3)}</td>
+                            <td className="p-2 text-center">
+                              <button
+                                onClick={() => editarProduto(p)}
+                                className="text-blue-600 hover:text-blue-800 font-bold"
+                              >
+                                Editar
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -377,6 +537,7 @@ export default function Cadastros() {
               </div>
             )}
 
+            {/* RESTANTE DAS ABAS (Clientes, Usuários, etc) - Mantém o mesmo código */}
             {aba === 'clientes' && (
               <div>
                 <h3 className="text-lg font-bold mb-4">Cadastro de Cliente</h3>
@@ -418,7 +579,7 @@ export default function Cadastros() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold mb-1">Email</label>
+                    <label className="block text-sm font-bold mb-1">E-mail</label>
                     <input
                       type="email"
                       value={clienteForm.email || ''}
@@ -427,7 +588,7 @@ export default function Cadastros() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <button
                     onClick={salvarCliente}
@@ -447,7 +608,7 @@ export default function Cadastros() {
                   <h4 className="font-bold mb-2">Clientes Cadastrados</h4>
                   <div className="border rounded max-h-96 overflow-y-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-200">
+                      <thead className="bg-gray-200 sticky top-0">
                         <tr>
                           <th className="p-2 text-left">Código</th>
                           <th className="p-2 text-left">Nome</th>
@@ -502,7 +663,7 @@ export default function Cadastros() {
                       className="w-full px-3 py-2 border rounded"
                     />
                   </div>
-                  <div className="flex items-end gap-4">
+                  <div className="flex items-end">
                     <label className="flex items-center">
                       <input
                         type="checkbox"
@@ -512,18 +673,9 @@ export default function Cadastros() {
                       />
                       <span className="text-sm font-bold">Administrador</span>
                     </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={usuarioForm.ativo}
-                        onChange={(e) => setUsuarioForm({...usuarioForm, ativo: e.target.checked})}
-                        className="mr-2"
-                      />
-                      <span className="text-sm font-bold">Ativo</span>
-                    </label>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <button
                     onClick={salvarUsuario}
@@ -543,7 +695,7 @@ export default function Cadastros() {
                   <h4 className="font-bold mb-2">Usuários Cadastrados</h4>
                   <div className="border rounded max-h-96 overflow-y-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-200">
+                      <thead className="bg-gray-200 sticky top-0">
                         <tr>
                           <th className="p-2 text-left">Login</th>
                           <th className="p-2 text-left">Nome</th>
@@ -556,8 +708,8 @@ export default function Cadastros() {
                           <tr key={u.id} className="border-t hover:bg-gray-50">
                             <td className="p-2">{u.login}</td>
                             <td className="p-2">{u.nome}</td>
-                            <td className="p-2 text-center">{u.admin ? '✓' : ''}</td>
-                            <td className="p-2 text-center">{u.ativo ? '✓' : ''}</td>
+                            <td className="p-2 text-center">{u.admin ? 'Sim' : 'Não'}</td>
+                            <td className="p-2 text-center">{u.ativo ? 'Sim' : 'Não'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -580,19 +732,8 @@ export default function Cadastros() {
                       className="w-full px-3 py-2 border rounded"
                     />
                   </div>
-                  <div className="flex items-end">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={categoriaForm.ativo}
-                        onChange={(e) => setCategoriaForm({...categoriaForm, ativo: e.target.checked})}
-                        className="mr-2"
-                      />
-                      <span className="text-sm font-bold">Ativo</span>
-                    </label>
-                  </div>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <button
                     onClick={salvarCategoria}
@@ -612,17 +753,17 @@ export default function Cadastros() {
                   <h4 className="font-bold mb-2">Categorias Cadastradas</h4>
                   <div className="border rounded max-h-96 overflow-y-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-200">
+                      <thead className="bg-gray-200 sticky top-0">
                         <tr>
                           <th className="p-2 text-left">Descrição</th>
-                          <th className="p-2 text-center">Ativo</th>
+                          <th className="p-2 text-center">Ativa</th>
                         </tr>
                       </thead>
                       <tbody>
                         {categorias.map(c => (
                           <tr key={c.id} className="border-t hover:bg-gray-50">
                             <td className="p-2">{c.descricao}</td>
-                            <td className="p-2 text-center">{c.ativo ? '✓' : ''}</td>
+                            <td className="p-2 text-center">{c.ativo ? 'Sim' : 'Não'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -635,7 +776,7 @@ export default function Cadastros() {
             {aba === 'formasPagamento' && (
               <div>
                 <h3 className="text-lg font-bold mb-4">Cadastro de Forma de Pagamento</h3>
-                <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-bold mb-1">Descrição*</label>
                     <input
@@ -646,31 +787,20 @@ export default function Cadastros() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold mb-1">Tipo de Pagamento*</label>
+                    <label className="block text-sm font-bold mb-1">Tipo</label>
                     <select
                       value={formaPagamentoForm.tipoPagamento}
                       onChange={(e) => setFormaPagamentoForm({...formaPagamentoForm, tipoPagamento: e.target.value})}
                       className="w-full px-3 py-2 border rounded"
                     >
-                      <option value="01">01 - Dinheiro</option>
-                      <option value="02">02 - Cheque</option>
-                      <option value="03">03 - Cartão de Crédito</option>
-                      <option value="04">04 - Cartão de Débito</option>
-                      <option value="05">05 - Crédito Loja</option>
-                      <option value="10">10 - Vale Alimentação</option>
-                      <option value="11">11 - Vale Refeição</option>
-                      <option value="12">12 - Vale Presente</option>
-                      <option value="13">13 - Vale Combustível</option>
-                      <option value="15">15 - Boleto Bancário</option>
-                      <option value="16">16 - Depósito Bancário</option>
-                      <option value="17">17 - PIX</option>
-                      <option value="18">18 - Transferência Bancária</option>
-                      <option value="19">19 - Programa de Fidelidade</option>
-                      <option value="90">90 - Sem pagamento</option>
-                      <option value="99">99 - Outros</option>
+                      {tiposPagamento.map(tp => (
+                        <option key={tp.codigo} value={tp.codigo}>
+                          {tp.codigo} - {tp.nome}
+                        </option>
+                      ))}
                     </select>
                   </div>
-                  <div className="flex items-end gap-4">
+                  <div className="flex items-end">
                     <label className="flex items-center">
                       <input
                         type="checkbox"
@@ -680,18 +810,9 @@ export default function Cadastros() {
                       />
                       <span className="text-sm font-bold">Permite Parcelamento</span>
                     </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formaPagamentoForm.ativo}
-                        onChange={(e) => setFormaPagamentoForm({...formaPagamentoForm, ativo: e.target.checked})}
-                        className="mr-2"
-                      />
-                      <span className="text-sm font-bold">Ativo</span>
-                    </label>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <button
                     onClick={salvarFormaPagamento}
@@ -711,12 +832,12 @@ export default function Cadastros() {
                   <h4 className="font-bold mb-2">Formas de Pagamento Cadastradas</h4>
                   <div className="border rounded max-h-96 overflow-y-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-200">
+                      <thead className="bg-gray-200 sticky top-0">
                         <tr>
                           <th className="p-2 text-left">Descrição</th>
                           <th className="p-2 text-left">Tipo</th>
                           <th className="p-2 text-center">Parcelamento</th>
-                          <th className="p-2 text-center">Ativo</th>
+                          <th className="p-2 text-center">Ativa</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -724,8 +845,8 @@ export default function Cadastros() {
                           <tr key={fp.id} className="border-t hover:bg-gray-50">
                             <td className="p-2">{fp.descricao}</td>
                             <td className="p-2">{fp.tipoPagamento}</td>
-                            <td className="p-2 text-center">{fp.permiteParcelamento ? '✓' : ''}</td>
-                            <td className="p-2 text-center">{fp.ativo ? '✓' : ''}</td>
+                            <td className="p-2 text-center">{fp.permiteParcelamento ? 'Sim' : 'Não'}</td>
+                            <td className="p-2 text-center">{fp.ativo ? 'Sim' : 'Não'}</td>
                           </tr>
                         ))}
                       </tbody>

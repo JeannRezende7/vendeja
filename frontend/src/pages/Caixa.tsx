@@ -100,7 +100,7 @@ export default function CaixaPage() {
 
   const carregarFormasPagamento = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/api/cadastros/formas-pagamento');
+      const res = await axios.get('http://localhost:8080/api/formas-pagamento/categoria/DINHEIRO');
       setFormasPagamento(res.data);
     } catch (error) {
       console.error('Erro ao carregar formas de pagamento:', error);

@@ -1,0 +1,156 @@
+/* 
+ * ============================================================
+ * ESTILOS DE IMPRESSÃO - VendeJá PDV
+ * Formatos: 80mm, 58mm, A4
+ * ============================================================
+ */
+
+/* IMPRESSÃO 80mm (tamanho padrão cupom fiscal) */
+@media print {
+  .print-80mm {
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 auto !important;
+    padding: 5mm !important;
+    font-size: 10pt !important;
+  }
+  
+  .print-80mm h1 {
+    font-size: 14pt !important;
+    margin: 5mm 0 !important;
+  }
+  
+  .print-80mm h2, .print-80mm h3 {
+    font-size: 12pt !important;
+    margin: 3mm 0 !important;
+  }
+  
+  .print-80mm p, .print-80mm td, .print-80mm th {
+    font-size: 10pt !important;
+  }
+  
+  .print-80mm table {
+    width: 100% !important;
+    font-size: 10pt !important;
+  }
+  
+  .print-80mm .logo {
+    max-width: 60mm !important;
+    height: auto !important;
+  }
+}
+
+/* IMPRESSÃO 58mm (cupom compacto) */
+@media print {
+  .print-58mm {
+    width: 58mm !important;
+    max-width: 58mm !important;
+    margin: 0 auto !important;
+    padding: 3mm !important;
+    font-size: 8pt !important;
+  }
+  
+  .print-58mm h1 {
+    font-size: 11pt !important;
+    margin: 3mm 0 !important;
+  }
+  
+  .print-58mm h2, .print-58mm h3 {
+    font-size: 10pt !important;
+    margin: 2mm 0 !important;
+  }
+  
+  .print-58mm p, .print-58mm td, .print-58mm th {
+    font-size: 8pt !important;
+  }
+  
+  .print-58mm table {
+    width: 100% !important;
+    font-size: 8pt !important;
+  }
+  
+  .print-58mm .logo {
+    max-width: 45mm !important;
+    height: auto !important;
+  }
+  
+  /* Remover elementos que ocupam muito espaço */
+  .print-58mm .bg-gray-50,
+  .print-58mm .bg-gray-100 {
+    background: none !important;
+    padding: 1mm !important;
+  }
+}
+
+/* IMPRESSÃO A4 (formato padrão) */
+@media print {
+  .print-a4 {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    margin: 0 auto !important;
+    padding: 15mm !important;
+    font-size: 11pt !important;
+  }
+  
+  .print-a4 h1 {
+    font-size: 18pt !important;
+    margin: 8mm 0 !important;
+  }
+  
+  .print-a4 h2, .print-a4 h3 {
+    font-size: 14pt !important;
+    margin: 5mm 0 !important;
+  }
+  
+  .print-a4 p, .print-a4 td, .print-a4 th {
+    font-size: 11pt !important;
+  }
+  
+  .print-a4 table {
+    width: 100% !important;
+    font-size: 11pt !important;
+  }
+  
+  .print-a4 .logo {
+    max-width: 100mm !important;
+    height: auto !important;
+  }
+}
+
+/* REGRAS GERAIS DE IMPRESSÃO */
+@media print {
+  /* Esconder elementos de interface */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Quebras de página */
+  .page-break {
+    page-break-before: always;
+  }
+  
+  /* Evitar quebra de elementos */
+  .no-break {
+    page-break-inside: avoid;
+  }
+  
+  /* Resetar backgrounds para economia de tinta */
+  * {
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Manter borders essenciais */
+  table, th, td {
+    border: 1px solid #000 !important;
+  }
+  
+  /* Remover sombras e bordas decorativas */
+  .shadow, .shadow-xl, .shadow-lg {
+    box-shadow: none !important;
+  }
+  
+  .rounded, .rounded-lg {
+    border-radius: 0 !important;
+  }
+}

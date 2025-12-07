@@ -6,6 +6,7 @@ import Vendas from './pages/Vendas';
 import ConfiguracaoEmpresa from './pages/ConfiguracaoEmpresa';
 import { NotificationProvider } from './contexts/NotificationContext';
 import Caixa from './pages/Caixa';
+import './styles/print-styles.css';
 
 function App() {
   return (

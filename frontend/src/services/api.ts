@@ -2,12 +2,12 @@ import axios from 'axios';
 import { Usuario, Cliente, Produto, Venda, FormaPagamento, Categoria } from '../types';
 
 const api = axios.create({
-  baseURL: '/api',  
+  baseURL: '/api',
   withCredentials: true,
 });
 
 export const authService = {
-  login: (login: string, senha: string) => 
+  login: (login: string, senha: string) =>
     api.post<Usuario>('/auth/login', { login, senha }),
 };
 
@@ -29,6 +29,15 @@ export const produtoService = {
   criar: (produto: Produto) => api.post<Produto>('/produtos', produto),
   atualizar: (id: number, produto: Produto) => api.put<Produto>(`/produtos/${id}`, produto),
   deletar: (id: number) => api.delete(`/produtos/${id}`),
+
+  // --- Upload & delete de foto (agora 100% integrado) ---
+  uploadFoto: (id: number, formData: FormData) =>
+    api.post(`/produtos/${id}/foto`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+
+  deletarFoto: (id: number) =>
+    api.delete(`/produtos/${id}/foto`),
 };
 
 export const vendaService = {
@@ -40,8 +49,10 @@ export const vendaService = {
 export const cadastrosService = {
   listarCategorias: () => api.get<Categoria[]>('/categorias'),
   criarCategoria: (categoria: Categoria) => api.post<Categoria>('/categorias', categoria),
+
   listarFormasPagamento: () => api.get<FormaPagamento[]>('/formas-pagamento'),
   criarFormaPagamento: (forma: FormaPagamento) => api.post<FormaPagamento>('/formas-pagamento', forma),
+
   listarUsuarios: () => api.get<Usuario[]>('/usuarios'),
   criarUsuario: (usuario: Usuario) => api.post<Usuario>('/usuarios', usuario),
   atualizarUsuario: (id: number, usuario: Usuario) => api.put<Usuario>(`/usuarios/${id}`, usuario),

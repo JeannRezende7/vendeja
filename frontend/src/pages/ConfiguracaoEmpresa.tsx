@@ -19,7 +19,8 @@ interface Configuracao {
   mensagemCupom: string;
   logoPath?: string;
   clientePadraoId?: number;
-  controlarCaixa?: boolean;  // ADICIONADO
+  controlarCaixa?: boolean;
+  tamanhoImpressao?: string; // ADICIONADO
 }
 
 interface Cliente {
@@ -45,6 +46,7 @@ export default function ConfiguracaoEmpresa() {
     telefone: '',
     email: '',
     mensagemCupom: '* OBRIGADO E VOLTE SEMPRE *',
+    tamanhoImpressao: '80mm', // ADICIONADO
   });
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -58,7 +60,10 @@ export default function ConfiguracaoEmpresa() {
     try {
       const res = await axios.get('http://localhost:8080/api/configuracao');
       if (res.data.id) {
-        setConfig(res.data);
+        setConfig({
+          ...res.data,
+          tamanhoImpressao: res.data.tamanhoImpressao || '80mm' // ADICIONADO
+        });
         if (res.data.logoPath) {
           setLogoPreview(`http://localhost:8080/uploads/logos/${res.data.logoPath}`);
         }
@@ -372,6 +377,53 @@ export default function ConfiguracaoEmpresa() {
                         </p>
                       </div>
                     )}
+                  </div>
+
+                  {/* ============================================ */}
+                  {/* TAMANHO DE IMPRESSÃO - NOVO CAMPO           */}
+                  {/* ============================================ */}
+                  <div className="border-t pt-6">
+                    <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded">
+                      <p className="text-sm text-purple-800">
+                        <strong>Tamanho de Impressão:</strong> Define o formato de impressão dos cupons 
+                        de venda e relatórios de fechamento de caixa. Escolha o tamanho adequado para sua impressora.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold mb-2">
+                        Formato de Impressão
+                      </label>
+                      <select
+                        value={config.tamanhoImpressao || '80mm'}
+                        onChange={(e) => setConfig({ ...config, tamanhoImpressao: e.target.value })}
+                        className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="80mm">80mm - Cupom Fiscal Padrão (impressora térmica)</option>
+                        <option value="58mm">58mm - Cupom Compacto (impressora térmica pequena)</option>
+                        <option value="A4">A4 - Folha A4 210mm (impressora comum)</option>
+                      </select>
+                      <p className="text-xs text-gray-600 mt-1">
+                        80mm é o padrão para impressoras térmicas de cupom fiscal
+                      </p>
+                    </div>
+
+                    <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded">
+                      <p className="text-sm text-gray-700 mb-2">
+                        <strong>Formato selecionado:</strong> {config.tamanhoImpressao || '80mm'}
+                      </p>
+                      <div className="text-xs text-gray-600 space-y-1">
+                        {config.tamanhoImpressao === '58mm' && (
+                          <p>• Ideal para delivery e food trucks (menor consumo de papel)</p>
+                        )}
+                        {config.tamanhoImpressao === '80mm' && (
+                          <p>• Padrão comercial, melhor custo-benefício</p>
+                        )}
+                        {config.tamanhoImpressao === 'A4' && (
+                          <p>• Ideal para relatórios gerenciais e contábeis</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                 </div>

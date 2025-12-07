@@ -25,7 +25,10 @@ export default function Cadastros() {
     controlarEstoque: true,
     ativo: true,
     codigosAlternativos: [],
+    fotoPath: undefined,
   });
+
+  const [fotoPreview, setFotoPreview] = useState<string>('');
 
   const [novoCodigo, setNovoCodigo] = useState('');
   const [novoCodigoDesc, setNovoCodigoDesc] = useState('');
@@ -50,7 +53,8 @@ export default function Cadastros() {
   
   const [formaPagamentoForm, setFormaPagamentoForm] = useState<Partial<FormaPagamento>>({
     descricao: '',
-    tipoPagamento: '99',
+    categoria: 'DINHEIRO',
+    tipoPagamento: '01',
     permiteParcelamento: false,
     ativo: true,
   });
@@ -109,6 +113,41 @@ export default function Cadastros() {
     setProdutoForm({ ...produtoForm, codigosAlternativos: codigos });
   };
 
+  const uploadFotoProduto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!produtoForm.id) {
+      showWarning('Salve o produto antes de enviar a foto');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await produtoService.uploadFoto(produtoForm.id, formData);
+      setProdutoForm({ ...produtoForm, fotoPath: res.data.fotoPath });
+      setFotoPreview(URL.createObjectURL(file));
+      showSuccess('Foto enviada com sucesso!');
+    } catch (error) {
+      showError('Erro ao enviar foto');
+    }
+  };
+
+  const deletarFotoProduto = async () => {
+    if (!produtoForm.id) return;
+
+    try {
+      await produtoService.deletarFoto(produtoForm.id);
+      setProdutoForm({ ...produtoForm, fotoPath: undefined });
+      setFotoPreview('');
+      showSuccess('Foto removida com sucesso!');
+    } catch (error) {
+      showError('Erro ao remover foto');
+    }
+  };
+
   const salvarProduto = async () => {
     if (!produtoForm.codigo || !produtoForm.descricao) {
       showWarning('Preencha código e descrição');
@@ -152,7 +191,9 @@ export default function Cadastros() {
       ativo: true,
       codigosAlternativos: [],
       categoria: undefined,
+      fotoPath: undefined,
     });
+    setFotoPreview('');
   };
 
   const editarProduto = (produto: Produto) => {
@@ -160,6 +201,13 @@ export default function Cadastros() {
       ...produto,
       codigosAlternativos: produto.codigosAlternativos || [],
     });
+    
+    // Carregar preview da foto se existir
+    if (produto.fotoPath) {
+      setFotoPreview(`http://localhost:8080/uploads/produtos/${produto.fotoPath}`);
+    } else {
+      setFotoPreview('');
+    }
   };
 
   const salvarCliente = async () => {
@@ -234,7 +282,18 @@ export default function Cadastros() {
     }
   };
 
-  const tiposPagamento = [
+  // Tipos de Pagamento PDV (interno)
+  const tiposPDV = [
+    { value: 'DINHEIRO', label: 'Dinheiro' },
+    { value: 'PIX', label: 'PIX' },
+    { value: 'CARTAO', label: 'Cartão' },
+    { value: 'PARCELADO', label: 'Parcelado' },
+    { value: 'TICKET', label: 'Ticket' },
+    { value: 'VALE', label: 'Vale' },
+  ];
+
+  // Meios de Pagamento NFC-e (códigos oficiais)
+  const meiosPagamentoNFCe = [
     { codigo: '01', nome: 'Dinheiro' },
     { codigo: '02', nome: 'Cheque' },
     { codigo: '03', nome: 'Cartão de Crédito' },
@@ -363,6 +422,42 @@ export default function Cadastros() {
                       className="w-full px-3 py-2 border rounded"
                     />
                   </div>
+
+                  {/* Foto do Produto */}
+                  <div>
+                    <label className="block text-sm font-bold mb-1">Foto do Produto</label>
+                    <div className="flex gap-2 items-center">
+                      {fotoPreview && (
+                        <div className="relative">
+                          <img 
+                            src={fotoPreview} 
+                            alt="Preview" 
+                            className="h-20 w-20 object-cover border rounded" 
+                          />
+                          <button
+                            type="button"
+                            onClick={deletarFotoProduto}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 text-xs font-bold"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={uploadFotoProduto}
+                        disabled={!produtoForm.id}
+                        className="flex-1 px-3 py-2 border rounded disabled:bg-gray-100"
+                      />
+                    </div>
+                    {!produtoForm.id && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        Salve o produto primeiro para enviar a foto
+                      </p>
+                    )}
+                  </div>
+                  
                   <div>
                     <label className="block text-sm font-bold mb-1">Preço Venda</label>
                     <input
@@ -776,41 +871,64 @@ export default function Cadastros() {
             {aba === 'formasPagamento' && (
               <div>
                 <h3 className="text-lg font-bold mb-4">Cadastro de Forma de Pagamento</h3>
+                
+                {/* Descrição */}
+                <div className="mb-4">
+                  <label className="block text-sm font-bold mb-1">Descrição*</label>
+                  <input
+                    type="text"
+                    value={formaPagamentoForm.descricao}
+                    onChange={(e) => setFormaPagamentoForm({...formaPagamentoForm, descricao: e.target.value})}
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
+
+                {/* Tipo PDV e Meio NFC-e */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-bold mb-1">Descrição*</label>
-                    <input
-                      type="text"
-                      value={formaPagamentoForm.descricao}
-                      onChange={(e) => setFormaPagamentoForm({...formaPagamentoForm, descricao: e.target.value})}
-                      className="w-full px-3 py-2 border rounded"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold mb-1">Tipo</label>
+                    <label className="block text-sm font-bold mb-1">Tipo de Pagamento (PDV)*</label>
                     <select
-                      value={formaPagamentoForm.tipoPagamento}
-                      onChange={(e) => setFormaPagamentoForm({...formaPagamentoForm, tipoPagamento: e.target.value})}
-                      className="w-full px-3 py-2 border rounded"
+                      value={formaPagamentoForm.categoria || 'DINHEIRO'}
+                      onChange={(e) => setFormaPagamentoForm({...formaPagamentoForm, categoria: e.target.value})}
+                      className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                      required
                     >
-                      {tiposPagamento.map(tp => (
-                        <option key={tp.codigo} value={tp.codigo}>
-                          {tp.codigo} - {tp.nome}
+                      {tiposPDV.map(tipo => (
+                        <option key={tipo.value} value={tipo.value}>
+                          {tipo.label}
                         </option>
                       ))}
                     </select>
                   </div>
-                  <div className="flex items-end">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formaPagamentoForm.permiteParcelamento}
-                        onChange={(e) => setFormaPagamentoForm({...formaPagamentoForm, permiteParcelamento: e.target.checked})}
-                        className="mr-2"
-                      />
-                      <span className="text-sm font-bold">Permite Parcelamento</span>
-                    </label>
+                  <div>
+                    <label className="block text-sm font-bold mb-1">Meio de Pagamento (NFC-e)*</label>
+                    <select
+                      value={formaPagamentoForm.tipoPagamento}
+                      onChange={(e) => setFormaPagamentoForm({...formaPagamentoForm, tipoPagamento: e.target.value})}
+                      className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                      required
+                    >
+                      {meiosPagamentoNFCe.map(meio => (
+                        <option key={meio.codigo} value={meio.codigo}>
+                          {meio.codigo} - {meio.nome}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                </div>
+
+                {/* Permite Parcelamento */}
+                <div className="mb-4">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formaPagamentoForm.permiteParcelamento}
+                      onChange={(e) => setFormaPagamentoForm({...formaPagamentoForm, permiteParcelamento: e.target.checked})}
+                      className="mr-2 w-4 h-4"
+                    />
+                    <span className="text-sm font-bold">Permite Parcelamento</span>
+                  </label>
                 </div>
 
                 <div className="flex gap-2">
@@ -821,7 +939,7 @@ export default function Cadastros() {
                     Salvar
                   </button>
                   <button
-                    onClick={() => setFormaPagamentoForm({ descricao: '', tipoPagamento: '99', permiteParcelamento: false, ativo: true })}
+                    onClick={() => setFormaPagamentoForm({ descricao: '', categoria: 'DINHEIRO', tipoPagamento: '01', permiteParcelamento: false, ativo: true })}
                     className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600"
                   >
                     Limpar
@@ -835,7 +953,8 @@ export default function Cadastros() {
                       <thead className="bg-gray-200 sticky top-0">
                         <tr>
                           <th className="p-2 text-left">Descrição</th>
-                          <th className="p-2 text-left">Tipo</th>
+                          <th className="p-2 text-left">Tipo PDV</th>
+                          <th className="p-2 text-left">Meio NFC-e</th>
                           <th className="p-2 text-center">Parcelamento</th>
                           <th className="p-2 text-center">Ativa</th>
                         </tr>
@@ -844,6 +963,7 @@ export default function Cadastros() {
                         {formasPagamento.map(fp => (
                           <tr key={fp.id} className="border-t hover:bg-gray-50">
                             <td className="p-2">{fp.descricao}</td>
+                            <td className="p-2">{fp.categoria || '-'}</td>
                             <td className="p-2">{fp.tipoPagamento}</td>
                             <td className="p-2 text-center">{fp.permiteParcelamento ? 'Sim' : 'Não'}</td>
                             <td className="p-2 text-center">{fp.ativo ? 'Sim' : 'Não'}</td>

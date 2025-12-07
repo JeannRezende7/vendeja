@@ -1,13 +1,19 @@
+// ======================
+// USUÁRIOS
+// ======================
 export interface Usuario {
   id?: number;
   login: string;
-  senha: string;
+  senha?: string; // opcional no retorno do backend
   nome: string;
   admin: boolean;
   ativo: boolean;
   dataCadastro?: string;
 }
 
+// ======================
+// CLIENTES
+// ======================
 export interface Cliente {
   id?: number;
   codigo?: string;
@@ -23,12 +29,18 @@ export interface Cliente {
   dataCadastro?: string;
 }
 
+// ======================
+// CATEGORIAS
+// ======================
 export interface Categoria {
   id?: number;
   descricao: string;
   ativo: boolean;
 }
 
+// ======================
+// PRODUTOS
+// ======================
 export interface Produto {
   id?: number;
   codigo: string;
@@ -42,6 +54,7 @@ export interface Produto {
   controlarEstoque: boolean;
   ativo: boolean;
   observacoes?: string;
+  fotoPath?: string; // campo adicional do 1º arquivo
   dataCadastro?: string;
   codigosAlternativos?: ProdutoCodigo[];
 }
@@ -52,14 +65,21 @@ export interface ProdutoCodigo {
   descricao?: string;
 }
 
+// ======================
+// FORMAS DE PAGAMENTO
+// ======================
 export interface FormaPagamento {
   id?: number;
   descricao: string;
-  tipoPagamento: string;
+  categoria?: string; // Dinheiro, PIX, Cartão — mantido do 1º arquivo
+  tipoPagamento: string; // NFC-e: 01, 02, 03...
   permiteParcelamento: boolean;
   ativo: boolean;
 }
 
+// ======================
+// VENDAS
+// ======================
 export interface VendaItem {
   id?: number;
   produto: Produto;
@@ -77,7 +97,7 @@ export interface VendaPagamento {
   id?: number;
   formaPagamento?: FormaPagamento;
   valor: number;
-  troco: number;
+  troco?: number;
 }
 
 export interface Venda {
@@ -86,18 +106,23 @@ export interface Venda {
   cliente?: Cliente;
   usuario: Usuario;
   dataHora?: string;
+
   subtotal: number;
   descontoPercentual?: number;
   descontoValor?: number;
   acrescimoPercentual?: number;
   acrescimoValor?: number;
   frete?: number;
+
   total: number;
   valorPago?: number;
   troco?: number;
-  formaPagamento?: FormaPagamento; // Mantido por compatibilidade
+
+  formaPagamento?: FormaPagamento; // compatibilidade
   pagamentos?: VendaPagamento[];
+
   observacoes?: string;
   cancelada: boolean;
+
   itens: VendaItem[];
 }

@@ -95,7 +95,7 @@ export interface Venda {
   total: number;
   valorPago?: number;
   troco?: number;
-  formaPagamento?: FormaPagamento; // Mantido por compatibilidade
+  formaPagamento?: FormaPagamento; 
   pagamentos?: VendaPagamento[];
   observacoes?: string;
   cancelada: boolean;

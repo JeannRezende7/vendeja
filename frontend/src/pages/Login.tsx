@@ -67,12 +67,7 @@ export default function Login() {
           >
             Entrar
           </button>
-        </form>
-        
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Login padrão: <strong>admin</strong></p>
-          <p>Senha padrão: <strong>admin</strong></p>
-        </div>
+        </form>      
       </div>
     </div>
   );

@@ -398,7 +398,7 @@ export default function PDV() {
           {controlarCaixa && (
             <div className={`px-3 py-1 rounded font-bold text-sm ${caixaAberto ? 'bg-green-500' : 'bg-red-500'
               }`}>
-              {caixaAberto ? '✓ CAIXA ABERTO' : '✗ CAIXA FECHADO'}
+              {caixaAberto ? 'CAIXA ABERTO' : 'CAIXA FECHADO'}
             </div>
           )}
         </div>

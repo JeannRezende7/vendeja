@@ -12,12 +12,11 @@ interface PagamentoItem {
 
 interface ModalPagamentoProps {
   valorTotal: number;
-  formasPagamento: FormaPagamento[];
   onConfirmar: (pagamentos: PagamentoItem[], valorPago: number, troco: number) => void;
   onCancelar: () => void;
 }
 
-export default function ModalPagamento({ valorTotal, formasPagamento, onConfirmar, onCancelar }: ModalPagamentoProps) {
+export default function ModalPagamento({ valorTotal, onConfirmar, onCancelar }: ModalPagamentoProps) {
   const { showWarning, showError, showSuccess } = useNotification();
   const [pagamentos, setPagamentos] = useState<PagamentoItem[]>([]);
   

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { produtoService, clienteService, vendaService, cadastrosService } from '../services/api';
+import { vendaService, cadastrosService } from '../services/api';
 import { Produto, Cliente, VendaItem, FormaPagamento, Usuario } from '../types';
 import ModalPagamento from '../components/ModalPagamento';
 import { useNotification } from '../contexts/NotificationContext';
@@ -20,12 +20,12 @@ export default function PDV() {
 
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [codigoProduto, setCodigoProduto] = useState('');
-  const [produtoAtual, setProdutoAtual] = useState<Produto | null>(null);
+  const [_produtoAtual, setProdutoAtual] = useState<Produto | null>(null);
   const [cliente, setCliente] = useState<Cliente | null>(null);
 
   const [itens, setItens] = useState<VendaItem[]>([]);
   const [itemSelecionado, setItemSelecionado] = useState<number>(-1);
-  const [formasPagamento, setFormasPagamento] = useState<FormaPagamento[]>([]);
+  const [_formasPagamento, setFormasPagamento] = useState<FormaPagamento[]>([]);
   const [mostrarModalPagamento, setMostrarModalPagamento] = useState(false);
 
   const [empresa, setEmpresa] = useState<any>(null);
@@ -348,7 +348,6 @@ export default function PDV() {
     inputProdutoRef.current?.focus();
   };
 
-  const totalItens = itens.length;
   const nomeClienteExibicao = cliente?.nome || 'CONSUMIDOR FINAL';
   // ====== LAYOUT (TEMA CLARO IGUAL À IMAGEM) ======
   return (
@@ -698,7 +697,6 @@ export default function PDV() {
       {mostrarModalPagamento && (
         <ModalPagamento
           valorTotal={calcularTotal()}
-          formasPagamento={formasPagamento}
           onConfirmar={finalizarVenda}
           onCancelar={() => setMostrarModalPagamento(false)}
         />

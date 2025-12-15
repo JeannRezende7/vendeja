@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { produtoService, clienteService, cadastrosService } from '../services/api';
-import { Produto, Cliente, Categoria, Usuario, FormaPagamento } from '../types';
+import { Produto, Cliente, Categoria, Usuario, FormaPagamento, ProdutoCodigo } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
 
 export default function Cadastros() {

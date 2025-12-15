@@ -23,8 +23,8 @@ export default function EstoqueConsulta() {
   const [codigoProduto, setCodigoProduto] = useState("");
   const [produto, setProduto] = useState<Produto | null>(null);
 
-  const [_mostrarEntrada, setMostrarEntrada] = useState(false);
-  const [_mostrarSaida, setMostrarSaida] = useState(false);
+  const [mostrarEntrada, setMostrarEntrada] = useState(false);
+  const [mostrarSaida, setMostrarSaida] = useState(false);
 
   const [qtdEntrada, setQtdEntrada] = useState("");
   const [obsEntrada, setObsEntrada] = useState("");

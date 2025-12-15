@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Usuario, Cliente, Produto, Venda, FormaPagamento, Categoria } from '../types';
 
 const api = axios.create({
-  baseURL: 'https://caixafacil-production.up.railway.app/api',
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,
   withCredentials: true,
 });
 

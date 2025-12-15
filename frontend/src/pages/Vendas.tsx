@@ -4,6 +4,7 @@ import { vendaService } from '../services/api';
 import { Venda } from '../types';
 import axios from 'axios';
 import CupomNaoFiscal from '../components/CupomNaoFiscal';
+import { getApiBaseUrl } from '../utils/apiConfig';
 
 export default function Vendas() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export default function Vendas() {
 
   const carregarEmpresa = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/api/configuracao');
+      const res = await axios.get(`${getApiBaseUrl()}/configuracao`);
       setEmpresa(res.data);
     } catch (error) {
       console.error('Erro ao carregar configuração:', error);

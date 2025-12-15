@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { produtoService, clienteService, cadastrosService } from '../services/api';
-import { Produto, Cliente, Categoria, Usuario, FormaPagamento, ProdutoCodigo } from '../types';
+import { Produto, Cliente, Categoria, Usuario, FormaPagamento } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
+import { getApiUrl } from '../utils/apiConfig';
 
 export default function Cadastros() {
   const { showSuccess, showError, showWarning } = useNotification();
@@ -204,7 +205,7 @@ export default function Cadastros() {
 
     // Carregar preview da foto se existir
     if (produto.fotoPath) {
-      setFotoPreview(`http://localhost:8080/uploads/produtos/${produto.fotoPath}`);
+      setFotoPreview(`${getApiUrl()}/uploads/produtos/${produto.fotoPath}`);
     } else {
       setFotoPreview('');
     }

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/apiConfig';
 
 interface RelatorioProps {
   caixa: any;
@@ -16,7 +17,7 @@ export default function RelatorioFechamentoCaixa({ caixa, relatorio, onClose }: 
     // Carregar configuração de tamanho de impressão
     const carregarConfig = async () => {
       try {
-        const res = await axios.get('http://localhost:8080/api/configuracao');
+        const res = await axios.get(`${getApiBaseUrl()}/configuracao`);
         if (res.data && res.data.tamanhoImpressao) {
           setTamanhoImpressao(res.data.tamanhoImpressao);
         }

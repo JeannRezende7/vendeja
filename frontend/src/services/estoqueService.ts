@@ -1,7 +1,8 @@
 import axios from "axios";
+import { getApiBaseUrl } from '../utils/apiConfig';
 
 const api = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: getApiBaseUrl(),
 });
 
 export const estoqueService = {

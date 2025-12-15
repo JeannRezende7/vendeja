@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useNotification } from '../contexts/NotificationContext';
+import { getApiUrl, getApiBaseUrl } from '../utils/apiConfig';
 
 interface Configuracao {
   id?: number;
@@ -58,14 +59,14 @@ export default function ConfiguracaoEmpresa() {
 
   const carregarConfiguracao = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/api/configuracao');
+      const res = await axios.get(`${getApiBaseUrl()}/configuracao`);
       if (res.data.id) {
         setConfig({
           ...res.data,
           tamanhoImpressao: res.data.tamanhoImpressao || '80mm' // ADICIONADO
         });
         if (res.data.logoPath) {
-          setLogoPreview(`http://localhost:8080/uploads/logos/${res.data.logoPath}`);
+          setLogoPreview(`${getApiUrl()}/uploads/logos/${res.data.logoPath}`);
         }
       }
     } catch (error) {
@@ -75,7 +76,7 @@ export default function ConfiguracaoEmpresa() {
 
   const carregarClientes = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/api/clientes');
+      const res = await axios.get(`${getApiBaseUrl()}/clientes`);
       setClientes(res.data);
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
@@ -84,7 +85,7 @@ export default function ConfiguracaoEmpresa() {
 
   const salvar = async () => {
     try {
-      await axios.post('http://localhost:8080/api/configuracao', config);
+      await axios.post(`${getApiBaseUrl()}/configuracao`, config);
       showSuccess('Configuração salva com sucesso!');
     } catch (error) {
       showError('Erro ao salvar configuração');
@@ -99,7 +100,7 @@ export default function ConfiguracaoEmpresa() {
     formData.append('file', file);
 
     try {
-      const res = await axios.post('http://localhost:8080/api/configuracao/logo', formData, {
+      const res = await axios.post(`${getApiBaseUrl()}/configuracao/logo`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       

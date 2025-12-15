@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { getApiUrl, getApiBaseUrl } from '../utils/apiConfig';
 
 interface CupomProps {
   venda: any;
@@ -14,7 +15,7 @@ export default function CupomNaoFiscal({ venda, empresa, onClose }: CupomProps) 
     // Carregar configuração de tamanho de impressão
     const carregarConfig = async () => {
       try {
-        const res = await axios.get('http://localhost:8080/api/configuracao');
+        const res = await axios.get(`${getApiBaseUrl()}/configuracao`);
         if (res.data && res.data.tamanhoImpressao) {
           setTamanhoImpressao(res.data.tamanhoImpressao);
         }
@@ -137,7 +138,7 @@ export default function CupomNaoFiscal({ venda, empresa, onClose }: CupomProps) 
           {empresa.logoPath && !isCompact && (
             <div style={{ textAlign: 'center', marginBottom: '5mm' }}>
               <img 
-                src={`http://localhost:8080/uploads/logos/${empresa.logoPath}`} 
+                src={`${getApiUrl()}/uploads/logos/${empresa.logoPath}`} 
                 alt="Logo" 
                 style={{ 
                   maxWidth: isA4 ? '100mm' : '60mm', 

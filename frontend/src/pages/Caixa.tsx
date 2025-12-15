@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useNotification } from '../contexts/NotificationContext';
 import RelatorioFechamentoCaixa from '../components/RelatorioFechamentoCaixa';
+import { getApiBaseUrl } from '../utils/apiConfig';
 
 interface Usuario {
   id: number;
@@ -100,7 +101,7 @@ export default function CaixaPage() {
 
   const carregarFormasPagamento = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/api/formas-pagamento/categoria/DINHEIRO');
+      const res = await axios.get(`${getApiBaseUrl()}/formas-pagamento/categoria/DINHEIRO`);
       setFormasPagamento(res.data);
     } catch (error) {
       console.error('Erro ao carregar formas de pagamento:', error);
@@ -109,7 +110,7 @@ export default function CaixaPage() {
 
   const verificarStatusCaixa = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/api/caixa/status');
+      const res = await axios.get(`${getApiBaseUrl()}/caixa/status`);
       setCaixaAberto(res.data.caixaAberto);
       if (res.data.caixaAberto) {
         setCaixa(res.data.caixa);
@@ -122,7 +123,7 @@ export default function CaixaPage() {
 
   const carregarMovimentacoes = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/api/caixa/movimentacoes');
+      const res = await axios.get(`${getApiBaseUrl()}/caixa/movimentacoes`);
       setMovimentacoes(res.data);
     } catch (error) {
       console.error('Erro ao carregar movimentações:', error);
@@ -131,7 +132,7 @@ export default function CaixaPage() {
 
   const carregarHistorico = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/api/caixa/historico');
+      const res = await axios.get(`${getApiBaseUrl()}/caixa/historico`);
       setHistorico(res.data);
     } catch (error) {
       console.error('Erro ao carregar histórico:', error);
@@ -150,7 +151,7 @@ export default function CaixaPage() {
     }
 
     try {
-      await axios.post('http://localhost:8080/api/caixa/abrir', {
+      await axios.post(`${getApiBaseUrl()}/caixa/abrir`, {
         usuarioId: usuario!.id,
         valorAbertura: parseFloat(formAbertura.valorAbertura),
         formaPagamentoId: parseInt(formAbertura.formaPagamentoId),
@@ -168,7 +169,7 @@ export default function CaixaPage() {
 
   const fecharCaixa = async () => {
     try {
-      await axios.post('http://localhost:8080/api/caixa/fechar', {
+      await axios.post(`${getApiBaseUrl()}/caixa/fechar`, {
         observacoes: formFechamento.observacoes
       });
 
@@ -204,7 +205,7 @@ export default function CaixaPage() {
     }
 
     try {
-      await axios.post('http://localhost:8080/api/caixa/suprimento', {
+      await axios.post(`${getApiBaseUrl()}/caixa/suprimento`, {
         valor: parseFloat(formSuprimento.valor),
         formaPagamentoId: parseInt(formSuprimento.formaPagamentoId),
         descricao: formSuprimento.descricao
@@ -237,7 +238,7 @@ export default function CaixaPage() {
     }
 
     try {
-      await axios.post('http://localhost:8080/api/caixa/sangria', {
+      await axios.post(`${getApiBaseUrl()}/caixa/sangria`, {
         valor: parseFloat(formSangria.valor),
         formaPagamentoId: parseInt(formSangria.formaPagamentoId),
         descricao: formSangria.descricao
@@ -255,7 +256,7 @@ export default function CaixaPage() {
 
   const visualizarRelatorio = async (caixaId: number) => {
     try {
-      const res = await axios.get(`http://localhost:8080/api/caixa/${caixaId}/relatorio`);
+      const res = await axios.get(`${getApiBaseUrl()}/caixa/${caixaId}/relatorio`);
       setRelatorioSelecionado(res.data);
       setMostrarRelatorio(true);
     } catch (error) {

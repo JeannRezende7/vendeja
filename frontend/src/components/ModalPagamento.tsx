@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FormaPagamento } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/apiConfig';
 
 interface PagamentoItem {
   formaPagamento: FormaPagamento;
@@ -12,12 +13,11 @@ interface PagamentoItem {
 
 interface ModalPagamentoProps {
   valorTotal: number;
-  formasPagamento: FormaPagamento[];
   onConfirmar: (pagamentos: PagamentoItem[], valorPago: number, troco: number) => void;
   onCancelar: () => void;
 }
 
-export default function ModalPagamento({ valorTotal, formasPagamento, onConfirmar, onCancelar }: ModalPagamentoProps) {
+export default function ModalPagamento({ valorTotal, onConfirmar, onCancelar }: ModalPagamentoProps) {
   const { showWarning, showError, showSuccess } = useNotification();
   const [pagamentos, setPagamentos] = useState<PagamentoItem[]>([]);
   
@@ -42,7 +42,7 @@ export default function ModalPagamento({ valorTotal, formasPagamento, onConfirma
   // Buscar formas por categoria e iniciar fluxo
   const selecionarPorCategoria = async (categoria: string) => {
     try {
-      const response = await axios.get(`http://localhost:8080/api/formas-pagamento/categoria/${categoria}`);
+      const response = await axios.get(`${getApiBaseUrl()}/formas-pagamento/categoria/${categoria}`);
       const formas: FormaPagamento[] = response.data;
       
       if (formas.length === 0) {

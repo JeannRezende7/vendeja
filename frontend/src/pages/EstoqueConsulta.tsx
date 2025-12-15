@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { estoqueService } from "../services/estoqueService";
 import { useNotification } from "../contexts/NotificationContext";
 import { Produto } from "../types";
+import { getApiBaseUrl } from '../utils/apiConfig';
 
 interface MovimentacaoEstoque {
   id: number;
@@ -23,8 +24,8 @@ export default function EstoqueConsulta() {
   const [codigoProduto, setCodigoProduto] = useState("");
   const [produto, setProduto] = useState<Produto | null>(null);
 
-  const [mostrarEntrada, setMostrarEntrada] = useState(false);
-  const [mostrarSaida, setMostrarSaida] = useState(false);
+  const [, setMostrarEntrada] = useState(false);
+  const [, setMostrarSaida] = useState(false);
 
   const [qtdEntrada, setQtdEntrada] = useState("");
   const [obsEntrada, setObsEntrada] = useState("");
@@ -44,8 +45,8 @@ export default function EstoqueConsulta() {
   // ===========================================================
   const carregarAlertas = async () => {
     try {
-      const baixo = await axios.get("http://localhost:8080/api/produtos/estoque-baixo");
-      const alerta = await axios.get("http://localhost:8080/api/produtos/estoque-alerta");
+      const baixo = await axios.get(`${getApiBaseUrl()}/produtos/estoque-baixo`);
+      const alerta = await axios.get(`${getApiBaseUrl()}/produtos/estoque-alerta`);
 
       setEstoqueBaixo(baixo.data);
       setEstoqueAlerta(alerta.data);
@@ -62,7 +63,7 @@ export default function EstoqueConsulta() {
 
     try {
       const res = await axios.get(
-        `http://localhost:8080/api/produtos/buscar-parcial/${codigoProduto}`
+        `${getApiBaseUrl()}/produtos/buscar-parcial/${codigoProduto}`
       );
 
       if (!Array.isArray(res.data) || res.data.length === 0) {
@@ -139,7 +140,7 @@ export default function EstoqueConsulta() {
     try {
       setCarregandoHistorico(true);
       const res = await axios.get(
-        "http://localhost:8080/api/estoque/historico",
+        `${getApiBaseUrl()}/estoque/historico`,
         { params: { produtoId: produto.id } }
       );
       setHistorico(res.data);

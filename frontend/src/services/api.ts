@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { Usuario, Cliente, Produto, Venda, FormaPagamento, Categoria } from '../types';
+import { getApiBaseUrl } from '../utils/apiConfig';
 
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api`,
+  baseURL: getApiBaseUrl(),
   withCredentials: true,
 });
 

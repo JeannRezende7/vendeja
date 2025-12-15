@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { vendaService, cadastrosService } from '../services/api';
 import { Produto, Cliente, VendaItem, FormaPagamento, Usuario } from '../types';
 import ModalPagamento from '../components/ModalPagamento';
+import ModalBuscaProduto from '../components/ModalBuscaProduto';
+import ModalBuscaCliente from '../components/ModalBuscaCliente';
 import { useNotification } from '../contexts/NotificationContext';
 import axios from 'axios';
 import CupomNaoFiscal from '../components/CupomNaoFiscal';
@@ -28,6 +30,8 @@ export default function PDV() {
   const [itemSelecionado, setItemSelecionado] = useState<number>(-1);
   const [, setFormasPagamento] = useState<FormaPagamento[]>([]);
   const [mostrarModalPagamento, setMostrarModalPagamento] = useState(false);
+  const [mostrarBuscaProduto, setMostrarBuscaProduto] = useState(false);
+  const [mostrarBuscaCliente, setMostrarBuscaCliente] = useState(false);
 
   const [empresa, setEmpresa] = useState<any>(null);
   const [mostrarCupom, setMostrarCupom] = useState(false);
@@ -104,6 +108,27 @@ export default function PDV() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [itemSelecionado, itens]);
 
+  // F2 = BUSCAR PRODUTO, F3 = BUSCAR CLIENTE
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Não ativa se já tiver um modal aberto
+      if (mostrarModalPagamento || mostrarBuscaProduto || mostrarBuscaCliente || mostrarCupom) {
+        return;
+      }
+
+      if (e.key === 'F2') {
+        e.preventDefault();
+        setMostrarBuscaProduto(true);
+      } else if (e.key === 'F3') {
+        e.preventDefault();
+        setMostrarBuscaCliente(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mostrarModalPagamento, mostrarBuscaProduto, mostrarBuscaCliente, mostrarCupom]);
+
   // BUSCA PRODUTO
   const buscarProduto = async (codigo: string) => {
     if (!codigo.trim()) return;
@@ -125,6 +150,28 @@ export default function PDV() {
       showError('Produto não encontrado');
       setCodigoProduto('');
       setProdutoAtual(null);
+    }
+  };
+
+  // BUSCA CLIENTE RÁPIDA (por código ou CPF)
+  const buscarClienteRapido = async (termo: string) => {
+    if (!termo.trim()) return;
+
+    try {
+      const res = await axios.get(`${getApiBaseUrl()}/clientes/buscar`, {
+        params: { q: termo }
+      });
+
+      if (res.data && res.data.length > 0) {
+        const clienteEncontrado = res.data[0];
+        setCliente(clienteEncontrado);
+        showSuccess(`Cliente ${clienteEncontrado.nome} selecionado!`);
+        inputProdutoRef.current?.focus();
+      } else {
+        showError('Cliente não encontrado');
+      }
+    } catch (error) {
+      showError('Cliente não encontrado');
     }
   };
 
@@ -412,12 +459,20 @@ export default function PDV() {
       {/* MENU INFERIOR DO HEADER */}
       <div className="mx-6 mt-3 bg-white border border-gray-200 rounded-lg px-6 py-2 flex items-center justify-between text-sm shadow-sm">
         <div className="flex items-center gap-3">
-          <button className="px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-100 flex items-center gap-2">
+          <button 
+            type="button"
+            onClick={() => setMostrarBuscaProduto(true)}
+            className="px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-100 flex items-center gap-2"
+          >
             <span className="font-semibold">F2</span>
             <span>Buscar Produto</span>
           </button>
 
-          <button className="px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-100 flex items-center gap-2">
+          <button 
+            type="button"
+            onClick={() => setMostrarBuscaCliente(true)}
+            className="px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-100 flex items-center gap-2"
+          >
             <span className="font-semibold">F3</span>
             <span>Cliente</span>
           </button>
@@ -477,26 +532,33 @@ export default function PDV() {
                 </div>
               </div>
 
-              {/* Código leitor + cliente */}
-              <div className="w-72 bg-white border border-[#e4e7ec] rounded-lg shadow-sm p-4 flex flex-col gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">
-                    Código Leitor de Barras (F1)
-                  </label>
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      value="000001"
-                      readOnly
-                      className="flex-1 px-3 py-2 rounded-md border border-emerald-500 bg-emerald-50 text-emerald-600 font-semibold text-sm"
-                    />
-                    <button className="w-10 h-10 rounded-md border border-gray-300 bg-gray-50 hover:bg-gray-100 flex items-center justify-center">
-                      🔍
-                    </button>
-                  </div>
+              {/* Campo de Cliente */}
+              <div className="w-72 bg-white border border-[#e4e7ec] rounded-lg shadow-sm p-4">
+                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                  Cliente (F3)
+                </label>
+                <div className="flex gap-2 items-center mb-2">
+                  <input
+                    type="text"
+                    placeholder="Código ou CPF..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const valor = e.currentTarget.value.trim();
+                        if (valor) buscarClienteRapido(valor);
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 rounded-md border border-gray-300 text-sm focus:border-green-500 focus:outline-none"
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setMostrarBuscaCliente(true)}
+                    className="w-10 h-10 rounded-md border border-gray-300 bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-lg"
+                  >
+                    🔍
+                  </button>
                 </div>
-
-                <div>
+                
+                <div className="px-3 py-2 rounded-md bg-emerald-50 border border-emerald-200">
                   <span className="text-xs text-gray-600">Cliente: </span>
                   <span className="text-xs font-semibold text-emerald-600">
                     {nomeClienteExibicao.toUpperCase()}
@@ -700,6 +762,36 @@ export default function PDV() {
           valorTotal={calcularTotal()}
           onConfirmar={finalizarVenda}
           onCancelar={() => setMostrarModalPagamento(false)}
+        />
+      )}
+
+      {mostrarBuscaProduto && (
+        <ModalBuscaProduto
+          onSelecionar={(produto) => {
+            adicionarItem(produto);
+            setMostrarBuscaProduto(false);
+            showSuccess(`${produto.descricao} adicionado!`);
+            inputProdutoRef.current?.focus();
+          }}
+          onCancelar={() => {
+            setMostrarBuscaProduto(false);
+            inputProdutoRef.current?.focus();
+          }}
+        />
+      )}
+
+      {mostrarBuscaCliente && (
+        <ModalBuscaCliente
+          onSelecionar={(clienteSelecionado) => {
+            setCliente(clienteSelecionado);
+            setMostrarBuscaCliente(false);
+            showSuccess(`Cliente ${clienteSelecionado.nome} selecionado!`);
+            inputProdutoRef.current?.focus();
+          }}
+          onCancelar={() => {
+            setMostrarBuscaCliente(false);
+            inputProdutoRef.current?.focus();
+          }}
         />
       )}
 

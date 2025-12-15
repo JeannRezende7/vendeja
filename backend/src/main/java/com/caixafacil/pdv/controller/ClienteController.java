@@ -37,6 +37,12 @@ public class ClienteController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+    
+    // Busca por query string (nome, código, CPF ou telefone)
+    @GetMapping("/buscar")
+    public List<Cliente> buscar(@RequestParam String q) {
+        return clienteRepository.buscarPorTermo(q);
+    }
 
     // NOVO: Busca parcial com LIKE
     @GetMapping("/buscar-parcial/{codigo}")
